@@ -1235,6 +1235,14 @@ export default function AdminApp() {
 
   const activeProducts = products.filter((product) => product.isActive !== false);
   const latestTransactions = transactions.slice(0, 8);
+  const unpaidInvoiceCustomers = customers
+    .filter((customer) => resolveCustomerPaymentMode(customer) === 'postpaid')
+    .filter((customer) => Number(customer.currentInvoiceAmount || 0) > 0)
+    .sort((a, b) => Number(b.currentInvoiceAmount || 0) - Number(a.currentInvoiceAmount || 0));
+  const unpaidInvoiceTotal = unpaidInvoiceCustomers.reduce(
+    (sum, customer) => sum + Number(customer.currentInvoiceAmount || 0),
+    0
+  );
   const totalBalance = customers.reduce((sum, customer) => sum + Number(customer.balance || 0), 0);
   const totalInvoice = customers.reduce((sum, customer) => sum + Number(customer.currentInvoiceAmount || 0), 0);
 
@@ -1888,6 +1896,77 @@ export default function AdminApp() {
                 description="取引履歴の件数"
                 icon={ReceiptText}
               />
+            </section>
+
+            <section className="mt-6">
+              <SectionCard
+                title="未精算一覧"
+                description="後払い利用者の現在の請求残高を確認します。"
+                icon={CreditCard}
+              >
+                <div className="mb-4 rounded-[1.5rem] bg-slate-900 p-5 text-white">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                    Unpaid Invoice
+                  </p>
+                  <p className="mt-2 text-3xl font-black">
+                    {formatYen(unpaidInvoiceTotal)}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-slate-300">
+                    未精算 {unpaidInvoiceCustomers.length}名
+                  </p>
+                </div>
+
+                {unpaidInvoiceCustomers.length === 0 ? (
+                  <div className="rounded-[1.5rem] bg-slate-50 p-5 text-center">
+                    <p className="text-sm font-bold text-slate-500">
+                      未精算の利用者はいません。
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {unpaidInvoiceCustomers.map((customer) => (
+                      <div
+                        key={customer.id}
+                        className="flex flex-col gap-3 rounded-[1.5rem] bg-slate-50 p-4 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div>
+                          <p className="text-base font-black text-slate-900">
+                            {customer.name}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-slate-400">
+                            {customer.phone || '電話番号未設定'} / {getCustomerOverrideLabel(customer)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 md:justify-end">
+                          <div className="text-right">
+                            <p className="text-xs font-bold text-slate-400">
+                              請求額
+                            </p>
+                            <p className="mt-1 text-xl font-black text-slate-900">
+                              {formatYen(customer.currentInvoiceAmount)}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSettleCustomerInvoice(customer)}
+                            disabled={settlementProcessingCustomerId === customer.id}
+                            className="flex h-11 items-center gap-2 rounded-full bg-emerald-600 px-4 text-xs font-black text-white disabled:opacity-60"
+                          >
+                            {settlementProcessingCustomerId === customer.id ? (
+                              <Loader2 className="animate-spin" size={14} />
+                            ) : (
+                              <ReceiptText size={14} />
+                            )}
+                            精算
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </SectionCard>
             </section>
 
             <section className="mt-6 grid gap-4 lg:grid-cols-2">
