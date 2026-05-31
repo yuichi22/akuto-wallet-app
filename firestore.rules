@@ -6,10 +6,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isDemoStaff() {
+    function isDemoStaffByUid() {
       return signedIn()
         && exists(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/staffMembers/$(request.auth.uid))
         && get(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/staffMembers/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function isDemoStaffByPhone() {
+      return signedIn()
+        && request.auth.token.phone_number != null
+        && exists(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/staffMembers/$(request.auth.token.phone_number))
+        && get(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/staffMembers/$(request.auth.token.phone_number)).data.status == 'active';
+    }
+
+    function isDemoStaff() {
+      return isDemoStaffByUid() || isDemoStaffByPhone();
     }
 
     function isSelfCustomer(customerId) {

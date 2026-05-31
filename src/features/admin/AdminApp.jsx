@@ -424,6 +424,14 @@ const emptyCustomerForm = {
   status: 'active',
 };
 
+const emptyStaffForm = {
+  displayName: '',
+  phoneNumber: '',
+  role: 'staff',
+  status: 'active',
+};
+
+
 function CustomerModal({
   customer,
   form,
@@ -777,6 +785,159 @@ function StatCard({ title, value, description, icon: Icon }) {
   );
 }
 
+function StaffModal({
+  staffMember,
+  form,
+  processing,
+  errorMessage,
+  onChange,
+  onClose,
+  onConfirm,
+}) {
+  if (!form) return null;
+
+  const isEdit = Boolean(staffMember?.id);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0">
+      <section className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[2rem] bg-white p-5 text-slate-900 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+              Staff
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-slate-900">
+              {isEdit ? 'スタッフ編集' : 'スタッフ追加'}
+            </h2>
+            <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+              管理画面を利用できるスタッフを登録します。電話番号は +81 形式で入力します。
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={processing}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 disabled:opacity-50"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          <div>
+            <label className="mb-2 block text-xs font-black text-slate-400">
+              表示名
+            </label>
+            <input
+              value={form.displayName}
+              onChange={(event) => onChange({ ...form, displayName: event.target.value })}
+              className="h-12 w-full rounded-2xl border-2 border-slate-100 px-4 text-sm font-bold outline-none focus:border-slate-900"
+              placeholder="例：管理スタッフ"
+              disabled={processing}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black text-slate-400">
+              電話番号
+            </label>
+            <input
+              value={form.phoneNumber}
+              onChange={(event) => onChange({ ...form, phoneNumber: event.target.value })}
+              className="h-12 w-full rounded-2xl border-2 border-slate-100 px-4 text-sm font-bold outline-none focus:border-slate-900"
+              placeholder="例：+819012345678"
+              disabled={processing}
+            />
+            <p className="mt-2 text-xs font-bold leading-5 text-slate-400">
+              090-1234-5678 → +819012345678 の形式で登録してください。
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black text-slate-400">
+              権限
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'owner', label: 'オーナー' },
+                { value: 'staff', label: 'スタッフ' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onChange({ ...form, role: option.value })}
+                  disabled={processing}
+                  className={`h-12 rounded-2xl text-sm font-black ${
+                    form.role === option.value
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onChange({
+              ...form,
+              status: form.status === 'active' ? 'inactive' : 'active',
+            })}
+            disabled={processing}
+            className={`flex h-14 items-center justify-between rounded-2xl px-4 text-sm font-black ${
+              form.status === 'active'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-red-50 text-red-600'
+            }`}
+          >
+            <span>利用状態</span>
+            <span>{form.status === 'active' ? '有効' : '停止中'}</span>
+          </button>
+        </div>
+
+        {errorMessage ? (
+          <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={processing}
+            className="flex h-14 items-center justify-center rounded-2xl bg-slate-100 text-sm font-black text-slate-600 disabled:opacity-50"
+          >
+            キャンセル
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={processing}
+            className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-60"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                保存中
+              </>
+            ) : (
+              <>
+                <Save size={17} />
+                保存
+              </>
+            )}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function SectionCard({ title, description, icon: Icon, children }) {
   return (
     <section className="rounded-[2rem] bg-white p-5 text-slate-900 shadow-sm ring-1 ring-slate-100">
@@ -805,6 +966,7 @@ export default function AdminApp() {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [staffMembers, setStaffMembers] = useState([]);
   const [authChecking, setAuthChecking] = useState(true);
   const [adminUser, setAdminUser] = useState(null);
   const [staffMember, setStaffMember] = useState(null);
@@ -825,6 +987,10 @@ export default function AdminApp() {
   const [customerForm, setCustomerForm] = useState(null);
   const [customerProcessing, setCustomerProcessing] = useState(false);
   const [customerError, setCustomerError] = useState('');
+  const [editingManagedStaff, setEditingManagedStaff] = useState(null);
+  const [managedStaffForm, setManagedStaffForm] = useState(null);
+  const [managedStaffProcessing, setManagedStaffProcessing] = useState(false);
+  const [managedStaffError, setManagedStaffError] = useState('');
   const [settingsForm, setSettingsForm] = useState(null);
   const [settingsProcessing, setSettingsProcessing] = useState(false);
   const [settingsError, setSettingsError] = useState('');
@@ -855,9 +1021,10 @@ export default function AdminApp() {
     setStaffChecking(true);
     setStaffError('');
 
+    const staffDocId = adminUser.phoneNumber || adminUser.uid;
     const staffRef = doc(
       db,
-      `${basePath}/staffMembers/${adminUser.uid}`
+      `${basePath}/staffMembers/${staffDocId}`
     );
 
     const unsubscribe = onSnapshot(
@@ -904,6 +1071,7 @@ export default function AdminApp() {
     let unsubscribeCustomers = null;
     let unsubscribeProducts = null;
     let unsubscribeTransactions = null;
+    let unsubscribeStaffMembers = null;
     let mounted = true;
 
     async function loadInitialData() {
@@ -996,6 +1164,24 @@ export default function AdminApp() {
             setErrorMessage('履歴データの読み込みに失敗しました。');
           }
         );
+
+        unsubscribeStaffMembers = onSnapshot(
+          query(collection(db, `${basePath}/staffMembers`)),
+          (snapshot) => {
+            const nextStaffMembers = snapshot.docs
+              .map((staffDoc) => ({
+                id: staffDoc.id,
+                ...staffDoc.data(),
+              }))
+              .sort((a, b) => String(a.displayName || '').localeCompare(String(b.displayName || ''), 'ja'));
+
+            setStaffMembers(nextStaffMembers);
+          },
+          (error) => {
+            console.error(error);
+            setErrorMessage('スタッフデータの読み込みに失敗しました。');
+          }
+        );
       } catch (error) {
         console.error(error);
         if (!mounted) return;
@@ -1019,6 +1205,10 @@ export default function AdminApp() {
 
       if (unsubscribeTransactions) {
         unsubscribeTransactions();
+      }
+
+      if (unsubscribeStaffMembers) {
+        unsubscribeStaffMembers();
       }
     };
   }, [basePath, authChecking, adminUser, staffChecking, staffMember]);
@@ -1305,6 +1495,74 @@ export default function AdminApp() {
       setCustomerError(error.message || '利用者の保存に失敗しました。');
     } finally {
       setCustomerProcessing(false);
+    }
+  };
+
+  const openCreateStaffModal = () => {
+    setEditingManagedStaff(null);
+    setManagedStaffForm({ ...emptyStaffForm });
+    setManagedStaffError('');
+  };
+
+  const openEditStaffModal = (member) => {
+    setEditingManagedStaff(member);
+    setManagedStaffForm({
+      displayName: member.displayName || '',
+      phoneNumber: member.phoneNumber || member.id || '',
+      role: member.role || 'staff',
+      status: member.status || 'active',
+    });
+    setManagedStaffError('');
+  };
+
+  const closeStaffModal = () => {
+    if (managedStaffProcessing) return;
+    setEditingManagedStaff(null);
+    setManagedStaffForm(null);
+    setManagedStaffError('');
+  };
+
+  const handleSaveStaffMember = async () => {
+    if (!managedStaffForm || managedStaffProcessing) return;
+
+    const displayName = String(managedStaffForm.displayName || '').trim();
+    const phoneNumber = String(managedStaffForm.phoneNumber || '').trim();
+    const role = managedStaffForm.role === 'owner' ? 'owner' : 'staff';
+    const status = managedStaffForm.status === 'inactive' ? 'inactive' : 'active';
+
+    if (!displayName) {
+      setManagedStaffError('表示名を入力してください。');
+      return;
+    }
+
+    if (!phoneNumber || !phoneNumber.startsWith('+')) {
+      setManagedStaffError('電話番号は +81 形式で入力してください。');
+      return;
+    }
+
+    setManagedStaffProcessing(true);
+    setManagedStaffError('');
+
+    try {
+      await setDoc(
+        doc(db, `${basePath}/staffMembers/${phoneNumber}`),
+        {
+          displayName,
+          phoneNumber,
+          role,
+          status,
+          updatedAt: serverTimestamp(),
+          ...(editingManagedStaff?.id ? {} : { createdAt: serverTimestamp() }),
+        },
+        { merge: true }
+      );
+
+      closeStaffModal();
+    } catch (error) {
+      console.error(error);
+      setManagedStaffError(error.message || 'スタッフの保存に失敗しました。');
+    } finally {
+      setManagedStaffProcessing(false);
     }
   };
 
@@ -1733,6 +1991,64 @@ export default function AdminApp() {
 
             <section className="mt-4">
               <SectionCard
+                title="スタッフ管理"
+                description="管理画面に入れるスタッフを管理します。"
+                icon={Users}
+              >
+                <button
+                  type="button"
+                  onClick={openCreateStaffModal}
+                  className="mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 text-sm font-black text-white"
+                >
+                  <Plus size={17} />
+                  スタッフ追加
+                </button>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {staffMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="rounded-[1.5rem] bg-slate-50 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-base font-black text-slate-900">
+                            {member.displayName || 'スタッフ'}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-slate-400">
+                            {member.phoneNumber || member.id || '電話番号未設定'}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <p className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
+                              member.status === 'inactive'
+                                ? 'bg-red-50 text-red-600'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {member.status === 'inactive' ? '停止中' : '有効'}
+                            </p>
+                            <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                              {member.role === 'owner' ? 'オーナー' : 'スタッフ'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditStaffModal(member)}
+                          className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200"
+                        >
+                          <Pencil size={14} />
+                          編集
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </section>
+
+            <section className="mt-4">
+              <SectionCard
                 title="最新の利用履歴"
                 description="購入・チャージ・精算履歴を確認します。"
                 icon={ReceiptText}
@@ -1835,6 +2151,16 @@ export default function AdminApp() {
         onChange={setCustomerForm}
         onClose={closeCustomerModal}
         onConfirm={handleSaveCustomer}
+      />
+
+      <StaffModal
+        staffMember={editingManagedStaff}
+        form={managedStaffForm}
+        processing={managedStaffProcessing}
+        errorMessage={managedStaffError}
+        onChange={setManagedStaffForm}
+        onClose={closeStaffModal}
+        onConfirm={handleSaveStaffMember}
       />
 
       <OfficeSettingsModal
