@@ -1404,6 +1404,62 @@ export default function AdminApp() {
     URL.revokeObjectURL(objectUrl);
   };
 
+  const handleExportCustomerSummaryCsv = () => {
+    const rows = customerTransactionSummaries.map((summary) => ({
+      利用者ID: summary.customerId,
+      利用者名: summary.customerName,
+      取引件数: summary.transactionCount,
+      購入合計: summary.purchaseTotal,
+      チャージ合計: summary.chargeTotal,
+      精算合計: summary.settlementTotal,
+      期間: getTransactionPeriodLabel(),
+      種別フィルター: transactionTypeFilter === 'all'
+        ? 'すべて'
+        : transactionTypeFilter === 'purchase'
+          ? '購入'
+          : transactionTypeFilter === 'charge'
+            ? 'チャージ'
+            : transactionTypeFilter === 'settlement'
+              ? '精算'
+              : transactionTypeFilter,
+    }));
+
+    const headers = [
+      '利用者ID',
+      '利用者名',
+      '取引件数',
+      '購入合計',
+      'チャージ合計',
+      '精算合計',
+      '期間',
+      '種別フィルター',
+    ];
+
+    const csvLines = [
+      headers.map(escapeCsvCell).join(','),
+      ...rows.map((row) => headers.map((header) => escapeCsvCell(row[header])).join(',')),
+    ];
+
+    const csvContent = `\ufeff${csvLines.join('\n')}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const objectUrl = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const dateKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('');
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `akuto-wallet-customer-summary-${getTransactionPeriodLabel()}-${transactionTypeFilter}-${dateKey}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
+  };
+
   const unpaidInvoiceCustomers = customers
     .filter((customer) => resolveCustomerPaymentMode(customer) === 'postpaid')
     .filter((customer) => Number(customer.currentInvoiceAmount || 0) > 0)
@@ -2384,6 +2440,21 @@ export default function AdminApp() {
                 description="選択中の期間・種別に応じて、利用者ごとの金額を確認します。"
                 icon={Users}
               >
+                <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <p className="text-xs font-black text-slate-400">
+                    集計対象 {customerTransactionSummaries.length}名
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleExportCustomerSummaryCsv}
+                    disabled={customerTransactionSummaries.length === 0}
+                    className="flex h-10 items-center justify-center rounded-full bg-slate-900 px-4 text-xs font-black text-white disabled:opacity-50"
+                  >
+                    利用者別CSV出力
+                  </button>
+                </div>
+
                 {customerTransactionSummaries.length === 0 ? (
                   <div className="rounded-[1.5rem] bg-slate-50 p-5 text-center">
                     <p className="text-sm font-bold text-slate-500">
