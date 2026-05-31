@@ -31,3 +31,4 @@ ui-debug.log*
 tmp/
 .tmp/
 *.tmp
+.firebase/
