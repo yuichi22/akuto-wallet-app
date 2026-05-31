@@ -18,12 +18,18 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/customers/$(customerId)).data.authUid == request.auth.uid;
     }
 
+    function isSelfTransaction(transactionId) {
+      return signedIn()
+        && resource.data.customerAuthUid == request.auth.uid;
+    }
+
     match /organizations/org_demo {
       allow read: if isDemoStaff();
       allow write: if isDemoStaff();
 
       match /offices/office_demo {
-        allow read: if isDemoStaff();
+        // 利用者画面で事業所名・支払い方式などを読むため、ログイン済みユーザーには read のみ許可
+        allow read: if isDemoStaff() || signedIn();
         allow write: if isDemoStaff();
 
         match /staffMembers/{staffId} {
@@ -58,9 +64,9 @@ service cloud.firestore {
         }
 
         match /transactions/{transactionId} {
-          // 利用者は履歴を読むだけ。
+          // 利用者は自分の履歴だけ読む。
           // 購入履歴の作成・残高更新は Cloud Functions createPurchase に寄せる。
-          allow read: if isDemoStaff() || signedIn();
+          allow read: if isDemoStaff() || isSelfTransaction(transactionId);
           allow write: if isDemoStaff();
         }
 

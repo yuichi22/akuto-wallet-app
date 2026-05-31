@@ -433,7 +433,9 @@ function PurchaseLiveScreen({ purchase, onClose }) {
 }
 
 export default function CustomerApp() {
-  const shouldShowLogin = window.location.pathname === '/login';
+  // 利用者画面は常にログイン必須。
+  // Firestore rules も request.auth 前提なので、Auth復元前に読み込ませない。
+  const shouldShowLogin = true;
   const routeCustomerId = useMemo(() => resolveCustomerIdFromPath(), []);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [authChecking, setAuthChecking] = useState(shouldShowLogin);
@@ -482,13 +484,30 @@ export default function CustomerApp() {
     let unsubscribeTransactions = null;
     let mounted = true;
 
+    // Firestore rules require request.auth.
+    // Do not read any customer app data until Firebase Auth has fully resolved
+    // and a logged-in user is available.
+    if (authChecking || !loggedInUser || loginResolving) {
+      setLoading(true);
+      return () => {
+        mounted = false;
+      };
+    }
+
     async function loadInitialData() {
       try {
         setLoading(true);
         setErrorMessage('');
 
         const officeRef = doc(db, `organizations/${DEMO_ORGANIZATION_ID}/offices/${DEMO_OFFICE_ID}`);
-        const officeSnap = await getDoc(officeRef);
+        let officeSnap;
+
+        try {
+          officeSnap = await getDoc(officeRef);
+        } catch (error) {
+          console.error('office read failed', error);
+          throw new Error(`事業所データの読み込みに失敗しました: ${error.message}`);
+        }
 
         if (!mounted) return;
 
@@ -518,39 +537,47 @@ export default function CustomerApp() {
             });
           },
           (error) => {
-            console.error(error);
-            setErrorMessage('利用者データの読み込みに失敗しました。');
+            console.error('customer read failed', error);
+            setErrorMessage(`利用者データの読み込みに失敗しました: ${error.message}`);
             setLoading(false);
           }
         );
 
 
-        const transactionsQuery = query(
-          collection(db, `${basePath}/transactions`),
-          limit(50)
-        );
+        const currentUid = auth.currentUser?.uid;
 
-        unsubscribeTransactions = onSnapshot(
-          transactionsQuery,
-          (snapshot) => {
-            const nextTransactions = snapshot.docs
-              .map((transactionDoc) => ({
-                id: transactionDoc.id,
-                ...transactionDoc.data(),
-              }))
-              .filter((transaction) => transaction.customerId === resolvedCustomerId)
-              .sort((a, b) => {
-                const dateA = toDate(a.createdAt)?.getTime() || 0;
-                const dateB = toDate(b.createdAt)?.getTime() || 0;
-                return dateB - dateA;
-              });
+        if (currentUid) {
+          const transactionsQuery = query(
+            collection(db, `${basePath}/transactions`),
+            where('customerAuthUid', '==', currentUid),
+            limit(50)
+          );
 
-            setTransactions(nextTransactions);
-          },
-          (error) => {
-            console.error(error);
-          }
-        );
+          unsubscribeTransactions = onSnapshot(
+            transactionsQuery,
+            (snapshot) => {
+              const nextTransactions = snapshot.docs
+                .map((transactionDoc) => ({
+                  id: transactionDoc.id,
+                  ...transactionDoc.data(),
+                }))
+                .filter((transaction) => transaction.customerId === resolvedCustomerId)
+                .sort((a, b) => {
+                  const dateA = toDate(a.createdAt)?.getTime() || 0;
+                  const dateB = toDate(b.createdAt)?.getTime() || 0;
+                  return dateB - dateA;
+                });
+
+              setTransactions(nextTransactions);
+            },
+            (error) => {
+              console.error('transactions read failed', error);
+              setErrorMessage(`履歴データの読み込みに失敗しました: ${error.message}`);
+            }
+          );
+        } else {
+          setTransactions([]);
+        }
 
         const productsQuery = query(
           collection(db, `${basePath}/products`)
@@ -575,8 +602,8 @@ export default function CustomerApp() {
             setLoading(false);
           },
           (error) => {
-            console.error(error);
-            setErrorMessage('商品データの読み込みに失敗しました。');
+            console.error('products read failed', error);
+            setErrorMessage(`商品データの読み込みに失敗しました: ${error.message}`);
             setLoading(false);
           }
         );
@@ -602,7 +629,7 @@ export default function CustomerApp() {
         unsubscribeTransactions();
       }
     };
-  }, [basePath, resolvedCustomerId]);
+  }, [basePath, resolvedCustomerId, authChecking, loggedInUser, loginResolving]);
 
   const paymentMode = customer?.paymentModeOverride || office?.paymentMode || 'prepaid';
   const isPostpaid = paymentMode === 'postpaid';

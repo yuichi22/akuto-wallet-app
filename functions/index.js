@@ -170,6 +170,7 @@ export const createPurchase = onRequest({ region: REGION, cors: true }, async (r
         balanceAfter,
         invoiceAfter,
         createdByUid: uid,
+        customerAuthUid: uid,
         visualCheck: {
           code: checkCode,
           seconds: visualCheckSeconds,
