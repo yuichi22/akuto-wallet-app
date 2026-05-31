@@ -1259,6 +1259,16 @@ export default function AdminApp() {
         && transactionDate.getMonth() === now.getMonth();
     }
 
+    if (transactionPeriodFilter === 'lastMonth') {
+      const now = new Date();
+      const firstDayOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+      periodMatches = Boolean(transactionDate)
+        && transactionDate >= firstDayOfLastMonth
+        && transactionDate < firstDayOfThisMonth;
+    }
+
     return typeMatches && periodMatches;
   });
 
@@ -1275,6 +1285,90 @@ export default function AdminApp() {
   const filteredSettlementTotal = filteredTransactions
     .filter((transaction) => transaction.type === 'settlement')
     .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+
+  const escapeCsvCell = (value) => {
+    const normalizedValue = value === null || value === undefined ? '' : String(value);
+    return `"${normalizedValue.replaceAll('"', '""')}"`;
+  };
+
+  const getTransactionTypeLabel = (transaction) => {
+    if (transaction.type === 'purchase') return '購入';
+    if (transaction.type === 'charge') return 'チャージ';
+    if (transaction.type === 'settlement') return '精算';
+    return transaction.type || 'その他';
+  };
+
+  const getTransactionPeriodLabel = () => {
+    if (transactionPeriodFilter === 'today') return '今日';
+    if (transactionPeriodFilter === 'month') return '今月';
+    if (transactionPeriodFilter === 'lastMonth') return '先月';
+    return 'すべて';
+  };
+
+  const handleExportTransactionsCsv = () => {
+    const rows = filteredTransactions.map((transaction) => {
+      const createdAt = toDate(transaction.createdAt);
+
+      return {
+        日時: createdAt
+          ? createdAt.toLocaleString('ja-JP', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '',
+        種別: getTransactionTypeLabel(transaction),
+        利用者: transaction.customerName || '',
+        商品内容: transaction.productName || transaction.note || '',
+        金額: Number(transaction.amount || 0),
+        残高後: transaction.balanceAfter ?? '',
+        請求後: transaction.invoiceAfter ?? '',
+        確認コード: transaction.visualCheck?.code || '',
+        メモ: transaction.note || '',
+        取引ID: transaction.id || '',
+      };
+    });
+
+    const headers = [
+      '日時',
+      '種別',
+      '利用者',
+      '商品内容',
+      '金額',
+      '残高後',
+      '請求後',
+      '確認コード',
+      'メモ',
+      '取引ID',
+    ];
+
+    const csvLines = [
+      headers.map(escapeCsvCell).join(','),
+      ...rows.map((row) => headers.map((header) => escapeCsvCell(row[header])).join(',')),
+    ];
+
+    const csvContent = `\ufeff${csvLines.join('\n')}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const objectUrl = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const dateKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('');
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `akuto-wallet-transactions-${getTransactionPeriodLabel()}-${transactionTypeFilter}-${dateKey}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
+  };
+
   const unpaidInvoiceCustomers = customers
     .filter((customer) => resolveCustomerPaymentMode(customer) === 'postpaid')
     .filter((customer) => Number(customer.currentInvoiceAmount || 0) > 0)
@@ -2316,11 +2410,12 @@ export default function AdminApp() {
                     <p className="mb-2 text-xs font-black text-slate-400">
                       期間
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[
                         { value: 'all', label: 'すべて' },
                         { value: 'today', label: '今日' },
                         { value: 'month', label: '今月' },
+                        { value: 'lastMonth', label: '先月' },
                       ].map((option) => (
                         <button
                           key={option.value}
@@ -2339,10 +2434,19 @@ export default function AdminApp() {
                   </div>
                 </div>
 
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <p className="text-xs font-black text-slate-400">
                     該当 {filteredTransactions.length}件 / 表示 {displayedTransactions.length}件
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={handleExportTransactionsCsv}
+                    disabled={filteredTransactions.length === 0}
+                    className="flex h-10 items-center justify-center rounded-full bg-slate-900 px-4 text-xs font-black text-white disabled:opacity-50"
+                  >
+                    CSV出力
+                  </button>
                 </div>
 
                 <div className="grid gap-3">
