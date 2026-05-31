@@ -996,6 +996,8 @@ export default function AdminApp() {
   const [settingsProcessing, setSettingsProcessing] = useState(false);
   const [settingsError, setSettingsError] = useState('');
   const [copiedCustomerId, setCopiedCustomerId] = useState('');
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState('all');
+  const [transactionPeriodFilter, setTransactionPeriodFilter] = useState('all');
 
   const basePath = useMemo(
     () => `organizations/${DEMO_ORGANIZATION_ID}/offices/${DEMO_OFFICE_ID}`,
@@ -1234,7 +1236,45 @@ export default function AdminApp() {
   };
 
   const activeProducts = products.filter((product) => product.isActive !== false);
-  const latestTransactions = transactions.slice(0, 8);
+  const filteredTransactions = transactions.filter((transaction) => {
+    const typeMatches = transactionTypeFilter === 'all'
+      || transaction.type === transactionTypeFilter;
+
+    const transactionDate = toDate(transaction.createdAt);
+
+    let periodMatches = true;
+
+    if (transactionPeriodFilter === 'today') {
+      const now = new Date();
+      periodMatches = Boolean(transactionDate)
+        && transactionDate.getFullYear() === now.getFullYear()
+        && transactionDate.getMonth() === now.getMonth()
+        && transactionDate.getDate() === now.getDate();
+    }
+
+    if (transactionPeriodFilter === 'month') {
+      const now = new Date();
+      periodMatches = Boolean(transactionDate)
+        && transactionDate.getFullYear() === now.getFullYear()
+        && transactionDate.getMonth() === now.getMonth();
+    }
+
+    return typeMatches && periodMatches;
+  });
+
+  const displayedTransactions = filteredTransactions.slice(0, 50);
+
+  const filteredPurchaseTotal = filteredTransactions
+    .filter((transaction) => transaction.type === 'purchase')
+    .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+
+  const filteredChargeTotal = filteredTransactions
+    .filter((transaction) => transaction.type === 'charge')
+    .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+
+  const filteredSettlementTotal = filteredTransactions
+    .filter((transaction) => transaction.type === 'settlement')
+    .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
   const unpaidInvoiceCustomers = customers
     .filter((customer) => resolveCustomerPaymentMode(customer) === 'postpaid')
     .filter((customer) => Number(customer.currentInvoiceAmount || 0) > 0)
@@ -2211,19 +2251,109 @@ export default function AdminApp() {
 
             <section className="mt-4">
               <SectionCard
-                title="最新の利用履歴"
-                description="購入・チャージ・精算履歴を確認します。"
+                title="取引履歴"
+                description="購入・チャージ・精算履歴を種別と期間で確認します。"
                 icon={ReceiptText}
               >
+                <div className="mb-4 grid gap-3 lg:grid-cols-3">
+                  <div className="rounded-[1.5rem] bg-slate-50 p-4">
+                    <p className="text-xs font-black text-slate-400">
+                      購入合計
+                    </p>
+                    <p className="mt-1 text-xl font-black text-slate-900">
+                      {formatYen(filteredPurchaseTotal)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.5rem] bg-emerald-50 p-4">
+                    <p className="text-xs font-black text-emerald-600">
+                      チャージ合計
+                    </p>
+                    <p className="mt-1 text-xl font-black text-emerald-700">
+                      {formatYen(filteredChargeTotal)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.5rem] bg-sky-50 p-4">
+                    <p className="text-xs font-black text-sky-600">
+                      精算合計
+                    </p>
+                    <p className="mt-1 text-xl font-black text-sky-700">
+                      {formatYen(filteredSettlementTotal)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-4 grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="mb-2 text-xs font-black text-slate-400">
+                      種別
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { value: 'all', label: 'すべて' },
+                        { value: 'purchase', label: '購入' },
+                        { value: 'charge', label: 'チャージ' },
+                        { value: 'settlement', label: '精算' },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setTransactionTypeFilter(option.value)}
+                          className={`h-10 rounded-2xl text-xs font-black ${
+                            transactionTypeFilter === option.value
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-black text-slate-400">
+                      期間
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'all', label: 'すべて' },
+                        { value: 'today', label: '今日' },
+                        { value: 'month', label: '今月' },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setTransactionPeriodFilter(option.value)}
+                          className={`h-10 rounded-2xl text-xs font-black ${
+                            transactionPeriodFilter === option.value
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-black text-slate-400">
+                    該当 {filteredTransactions.length}件 / 表示 {displayedTransactions.length}件
+                  </p>
+                </div>
+
                 <div className="grid gap-3">
-                  {latestTransactions.length === 0 ? (
+                  {displayedTransactions.length === 0 ? (
                     <div className="rounded-[1.5rem] bg-slate-50 p-5 text-center">
                       <p className="text-sm font-bold text-slate-500">
-                        まだ履歴がありません。
+                        該当する履歴がありません。
                       </p>
                     </div>
                   ) : (
-                    latestTransactions.map((transaction) => {
+                    displayedTransactions.map((transaction) => {
                       const isCharge = transaction.type === 'charge';
                       const isPurchase = transaction.type === 'purchase';
                       const isSettlement = transaction.type === 'settlement';
