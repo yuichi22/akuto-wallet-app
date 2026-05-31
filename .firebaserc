@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "dev": "akuto-wallet-dev",
+    "prod": "akuto-wallet-prod"
+  }
+}

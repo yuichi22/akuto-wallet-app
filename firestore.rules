@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isDemoStaff() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/staffMembers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/staffMembers/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function isSelfCustomer(customerId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/customers/$(customerId))
+        && get(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/customers/$(customerId)).data.authUid == request.auth.uid;
+    }
+
+    match /organizations/org_demo {
+      allow read: if isDemoStaff();
+      allow write: if isDemoStaff();
+
+      match /offices/office_demo {
+        allow read: if isDemoStaff();
+        allow write: if isDemoStaff();
+
+        match /staffMembers/{staffId} {
+          allow read: if isDemoStaff();
+          allow write: if isDemoStaff();
+        }
+
+        match /settings/{settingId} {
+          allow read: if isDemoStaff();
+          allow write: if isDemoStaff();
+        }
+
+        match /products/{productId} {
+          allow read: if isDemoStaff() || signedIn();
+          allow write: if isDemoStaff();
+        }
+
+        match /customers/{customerId} {
+          allow read: if isDemoStaff() || isSelfCustomer(customerId);
+          allow write: if isDemoStaff() || isSelfCustomer(customerId);
+        }
+
+        match /transactions/{transactionId} {
+          allow read: if isDemoStaff() || signedIn();
+          allow write: if isDemoStaff() || signedIn();
+        }
+
+        match /{document=**} {
+          allow read, write: if isDemoStaff();
+        }
+      }
+
+      match /{document=**} {
+        allow read, write: if isDemoStaff();
+      }
+    }
+
+    match /organizations/{organizationId} {
+      allow read, write: if false;
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /platform/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
