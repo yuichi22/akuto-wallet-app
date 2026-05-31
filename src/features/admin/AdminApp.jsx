@@ -1494,6 +1494,62 @@ export default function AdminApp() {
     }
   };
 
+  const handleExportCustomersCsv = () => {
+    const rows = customers.map((customer) => {
+      const paymentMode = resolveCustomerPaymentMode(customer);
+
+      return {
+        利用者ID: customer.id || '',
+        氏名: customer.name || '',
+        ふりがな: customer.kana || '',
+        電話番号: customer.phone || '',
+        残高: Number(customer.balance || 0),
+        請求額: Number(customer.currentInvoiceAmount || 0),
+        支払い方式: getPaymentModeLabel(paymentMode),
+        個別設定: getCustomerOverrideLabel(customer),
+        利用状態: customer.status === 'inactive' ? '停止中' : '利用中',
+        authUid: customer.authUid || '',
+      };
+    });
+
+    const headers = [
+      '利用者ID',
+      '氏名',
+      'ふりがな',
+      '電話番号',
+      '残高',
+      '請求額',
+      '支払い方式',
+      '個別設定',
+      '利用状態',
+      'authUid',
+    ];
+
+    const csvLines = [
+      headers.map(escapeCsvCell).join(','),
+      ...rows.map((row) => headers.map((header) => escapeCsvCell(row[header])).join(',')),
+    ];
+
+    const csvContent = `\ufeff${csvLines.join('\n')}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const objectUrl = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const dateKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('');
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `akuto-wallet-customers-${dateKey}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
+  };
+
   const openChargeModal = (customer) => {
     setChargeCustomer(customer);
     setChargeAmount('');
@@ -2200,14 +2256,25 @@ export default function AdminApp() {
                 description="残高・請求額を管理します。"
                 icon={Users}
               >
-                <button
-                  type="button"
-                  onClick={openCreateCustomerModal}
-                  className="mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 text-sm font-black text-white"
-                >
-                  <Plus size={17} />
-                  利用者追加
-                </button>
+                <div className="mb-4 grid gap-2 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={openCreateCustomerModal}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 text-sm font-black text-white"
+                  >
+                    <Plus size={17} />
+                    利用者追加
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportCustomersCsv}
+                    disabled={customers.length === 0}
+                    className="flex h-12 w-full items-center justify-center rounded-2xl bg-white text-sm font-black text-slate-700 ring-1 ring-slate-200 disabled:opacity-50"
+                  >
+                    利用者CSV出力
+                  </button>
+                </div>
 
                 <div className="grid gap-3">
                   {customers.map((customer) => (
