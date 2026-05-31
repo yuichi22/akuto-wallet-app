@@ -1362,6 +1362,8 @@ export default function AdminApp() {
         請求後: transaction.invoiceAfter ?? '',
         確認コード: transaction.visualCheck?.code || '',
         メモ: transaction.note || '',
+        操作者UID: transaction.createdByUid || '',
+        操作者名: transaction.createdByName || '',
         取引ID: transaction.id || '',
       };
     });
@@ -1376,6 +1378,8 @@ export default function AdminApp() {
       '請求後',
       '確認コード',
       'メモ',
+      '操作者UID',
+      '操作者名',
       '取引ID',
     ];
 
@@ -1608,6 +1612,8 @@ export default function AdminApp() {
           amount,
           balanceAfter,
           note: chargeNote || 'チャージ',
+          createdByUid: adminUser?.uid || '',
+          createdByName: staffMember?.displayName || '',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
@@ -1675,6 +1681,7 @@ export default function AdminApp() {
           invoiceAfter: 0,
           note: '精算',
           createdByUid: adminUser?.uid || '',
+          createdByName: staffMember?.displayName || '',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
