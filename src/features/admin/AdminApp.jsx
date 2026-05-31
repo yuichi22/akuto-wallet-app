@@ -979,6 +979,7 @@ export default function AdminApp() {
   const [chargeNote, setChargeNote] = useState('現金チャージ');
   const [chargeProcessing, setChargeProcessing] = useState(false);
   const [chargeError, setChargeError] = useState('');
+  const [settlementProcessingCustomerId, setSettlementProcessingCustomerId] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState(null);
   const [productProcessing, setProductProcessing] = useState(false);
@@ -1329,6 +1330,71 @@ export default function AdminApp() {
       setChargeError(error.message || 'チャージ処理に失敗しました。');
     } finally {
       setChargeProcessing(false);
+    }
+  };
+
+  const handleSettleCustomerInvoice = async (customer) => {
+    if (!customer || settlementProcessingCustomerId) return;
+
+    const invoiceAmount = Math.round(Number(customer.currentInvoiceAmount || 0));
+
+    if (!Number.isFinite(invoiceAmount) || invoiceAmount <= 0) {
+      window.alert('精算対象の請求額がありません。');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${customer.name || '利用者'} さんの請求額 ${formatYen(invoiceAmount)} を精算済みにしますか？`
+    );
+
+    if (!confirmed) return;
+
+    setSettlementProcessingCustomerId(customer.id);
+
+    const transactionId = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    try {
+      const customerRef = doc(db, `${basePath}/customers/${customer.id}`);
+      const transactionRef = doc(db, `${basePath}/transactions/${transactionId}`);
+
+      await runTransaction(db, async (transaction) => {
+        const customerSnap = await transaction.get(customerRef);
+
+        if (!customerSnap.exists()) {
+          throw new Error('利用者データが見つかりません。');
+        }
+
+        const latestCustomer = customerSnap.data();
+        const latestInvoiceAmount = Math.round(Number(latestCustomer.currentInvoiceAmount || 0));
+
+        if (!Number.isFinite(latestInvoiceAmount) || latestInvoiceAmount <= 0) {
+          throw new Error('精算対象の請求額がありません。');
+        }
+
+        transaction.update(customerRef, {
+          currentInvoiceAmount: 0,
+          updatedAt: serverTimestamp(),
+        });
+
+        transaction.set(transactionRef, {
+          customerId: customer.id,
+          customerName: latestCustomer.name || customer.name || '',
+          type: 'settlement',
+          amount: latestInvoiceAmount,
+          settlementAmount: latestInvoiceAmount,
+          invoiceBefore: latestInvoiceAmount,
+          invoiceAfter: 0,
+          note: '精算',
+          createdByUid: adminUser?.uid || '',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      });
+    } catch (error) {
+      console.error(error);
+      window.alert(error.message || '精算処理に失敗しました。');
+    } finally {
+      setSettlementProcessingCustomerId('');
     }
   };
 
@@ -1918,6 +1984,23 @@ export default function AdminApp() {
                           <Plus size={14} />
                           チャージ
                         </button>
+
+                        {resolveCustomerPaymentMode(customer) === 'postpaid'
+                          && Number(customer.currentInvoiceAmount || 0) > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSettleCustomerInvoice(customer)}
+                            disabled={settlementProcessingCustomerId === customer.id}
+                            className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white disabled:opacity-60"
+                          >
+                            {settlementProcessingCustomerId === customer.id ? (
+                              <Loader2 className="animate-spin" size={14} />
+                            ) : (
+                              <ReceiptText size={14} />
+                            )}
+                            精算
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -2064,6 +2147,7 @@ export default function AdminApp() {
                     latestTransactions.map((transaction) => {
                       const isCharge = transaction.type === 'charge';
                       const isPurchase = transaction.type === 'purchase';
+                      const isSettlement = transaction.type === 'settlement';
 
                       return (
                         <div
@@ -2075,7 +2159,9 @@ export default function AdminApp() {
                               <p className="text-base font-black text-slate-900">
                                 {isCharge
                                   ? 'チャージ'
-                                  : transaction.productName || transaction.note || '利用'}
+                                  : isSettlement
+                                    ? '精算'
+                                    : transaction.productName || transaction.note || '利用'}
                               </p>
                               <p className="mt-1 text-xs font-bold text-slate-400">
                                 {transaction.customerName || '利用者不明'} / {formatDateTime(transaction.createdAt)}
@@ -2083,8 +2169,14 @@ export default function AdminApp() {
                             </div>
 
                             <div className="text-left md:text-right">
-                              <p className={`text-lg font-black ${isCharge ? 'text-emerald-600' : 'text-slate-900'}`}>
-                                {isCharge ? '+' : isPurchase ? '-' : ''}
+                              <p className={`text-lg font-black ${
+                                isCharge
+                                  ? 'text-emerald-600'
+                                  : isSettlement
+                                    ? 'text-sky-700'
+                                    : 'text-slate-900'
+                              }`}>
+                                {isCharge ? '+' : isPurchase ? '-' : isSettlement ? '精算 ' : ''}
                                 {formatYen(transaction.amount)}
                               </p>
                               {transaction.visualCheck?.code ? (
