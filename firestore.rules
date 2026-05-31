@@ -32,7 +32,7 @@ service cloud.firestore {
         }
 
         match /settings/{settingId} {
-          allow read: if isDemoStaff();
+          allow read: if isDemoStaff() || signedIn();
           allow write: if isDemoStaff();
         }
 
@@ -43,12 +43,25 @@ service cloud.firestore {
 
         match /customers/{customerId} {
           allow read: if isDemoStaff() || isSelfCustomer(customerId);
-          allow write: if isDemoStaff() || isSelfCustomer(customerId);
+
+          // 利用者本人は authUid/phone 紐付けなど最低限の更新のみ許可。
+          // 残高・請求額・状態・名前などの重要項目は staff / Function 側で更新する。
+          allow update: if isDemoStaff()
+            || (
+              isSelfCustomer(customerId)
+              && request.resource.data.diff(resource.data).changedKeys()
+                .hasOnly(['authUid', 'phone', 'updatedAt'])
+              && request.resource.data.authUid == request.auth.uid
+            );
+
+          allow create, delete: if isDemoStaff();
         }
 
         match /transactions/{transactionId} {
+          // 利用者は履歴を読むだけ。
+          // 購入履歴の作成・残高更新は Cloud Functions createPurchase に寄せる。
           allow read: if isDemoStaff() || signedIn();
-          allow write: if isDemoStaff() || signedIn();
+          allow write: if isDemoStaff();
         }
 
         match /{document=**} {
