@@ -1286,6 +1286,41 @@ export default function AdminApp() {
     .filter((transaction) => transaction.type === 'settlement')
     .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
 
+  const customerTransactionSummaries = Object.values(
+    filteredTransactions.reduce((summaryMap, transaction) => {
+      const customerId = transaction.customerId || 'unknown';
+      const customerName = transaction.customerName || '利用者不明';
+
+      if (!summaryMap[customerId]) {
+        summaryMap[customerId] = {
+          customerId,
+          customerName,
+          purchaseTotal: 0,
+          chargeTotal: 0,
+          settlementTotal: 0,
+          transactionCount: 0,
+        };
+      }
+
+      summaryMap[customerId].transactionCount += 1;
+
+      if (transaction.type === 'purchase') {
+        summaryMap[customerId].purchaseTotal += Number(transaction.amount || 0);
+      }
+
+      if (transaction.type === 'charge') {
+        summaryMap[customerId].chargeTotal += Number(transaction.amount || 0);
+      }
+
+      if (transaction.type === 'settlement') {
+        summaryMap[customerId].settlementTotal += Number(transaction.amount || 0);
+      }
+
+      return summaryMap;
+    }, {})
+  ).sort((a, b) => b.purchaseTotal - a.purchaseTotal);
+
+
   const escapeCsvCell = (value) => {
     const normalizedValue = value === null || value === undefined ? '' : String(value);
     return `"${normalizedValue.replaceAll('"', '""')}"`;
@@ -2340,6 +2375,71 @@ export default function AdminApp() {
                     </div>
                   ))}
                 </div>
+              </SectionCard>
+            </section>
+
+            <section className="mt-4">
+              <SectionCard
+                title="利用者別集計"
+                description="選択中の期間・種別に応じて、利用者ごとの金額を確認します。"
+                icon={Users}
+              >
+                {customerTransactionSummaries.length === 0 ? (
+                  <div className="rounded-[1.5rem] bg-slate-50 p-5 text-center">
+                    <p className="text-sm font-bold text-slate-500">
+                      集計対象の取引がありません。
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {customerTransactionSummaries.map((summary) => (
+                      <div
+                        key={summary.customerId}
+                        className="rounded-[1.5rem] bg-slate-50 p-4"
+                      >
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-base font-black text-slate-900">
+                              {summary.customerName}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-slate-400">
+                              {summary.transactionCount}件 / ID: {summary.customerId}
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-right">
+                            <div className="rounded-2xl bg-white px-3 py-2 ring-1 ring-slate-100">
+                              <p className="text-[11px] font-black text-slate-400">
+                                購入
+                              </p>
+                              <p className="mt-1 text-sm font-black text-slate-900">
+                                {formatYen(summary.purchaseTotal)}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl bg-white px-3 py-2 ring-1 ring-slate-100">
+                              <p className="text-[11px] font-black text-emerald-600">
+                                チャージ
+                              </p>
+                              <p className="mt-1 text-sm font-black text-emerald-700">
+                                {formatYen(summary.chargeTotal)}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl bg-white px-3 py-2 ring-1 ring-slate-100">
+                              <p className="text-[11px] font-black text-sky-600">
+                                精算
+                              </p>
+                              <p className="mt-1 text-sm font-black text-sky-700">
+                                {formatYen(summary.settlementTotal)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </SectionCard>
             </section>
 
