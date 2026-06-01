@@ -1032,6 +1032,7 @@ export default function AdminApp() {
   const [copiedCustomerId, setCopiedCustomerId] = useState('');
   const [transactionTypeFilter, setTransactionTypeFilter] = useState('all');
   const [transactionPeriodFilter, setTransactionPeriodFilter] = useState('all');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState('active');
 
   const basePath = useMemo(
     () => `organizations/${DEMO_ORGANIZATION_ID}/offices/${DEMO_OFFICE_ID}`,
@@ -1268,6 +1269,12 @@ export default function AdminApp() {
     if (customer?.paymentModeOverride === 'postpaid') return '個別：後払い';
     return '事業所設定';
   };
+
+  const filteredCustomers = customers.filter((customer) => {
+    if (customerStatusFilter === 'all') return true;
+    if (customerStatusFilter === 'inactive') return customer.status === 'inactive';
+    return customer.status !== 'inactive';
+  });
 
   const activeProducts = products.filter((product) => product.isActive !== false);
   const filteredTransactions = transactions.filter((transaction) => {
@@ -2196,8 +2203,8 @@ export default function AdminApp() {
             <section className="mt-6 grid gap-4 md:grid-cols-4">
               <StatCard
                 title="Users"
-                value={`${customers.length}名`}
-                description="登録されている利用者数"
+                value={`${filteredCustomers.length}名`}
+                description={`表示中 / 全${customers.length}名`}
                 icon={Users}
               />
               <StatCard
@@ -2317,8 +2324,33 @@ export default function AdminApp() {
                   </button>
                 </div>
 
+                <div className="mb-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-2">
+                  {[
+                    { value: 'active', label: '利用中' },
+                    { value: 'inactive', label: '停止中' },
+                    { value: 'all', label: 'すべて' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setCustomerStatusFilter(option.value)}
+                      className={`h-10 rounded-xl text-xs font-black ${
+                        customerStatusFilter === option.value
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-500 ring-1 ring-slate-100'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mb-3 text-xs font-black text-slate-400">
+                  表示中 {filteredCustomers.length}名 / 全{customers.length}名
+                </div>
+
                 <div className="grid gap-3">
-                  {customers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <div
                       key={customer.id}
                       className="rounded-[1.5rem] bg-slate-50 p-4"
