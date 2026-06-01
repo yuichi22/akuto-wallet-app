@@ -52,7 +52,36 @@ export const health = onRequest({ region: REGION, cors: true }, async (req, res)
   });
 });
 
+
+function setCorsHeaders(req, res) {
+  const allowedOrigins = new Set([
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'https://akuto-wallet-dev.web.app',
+    'https://akuto-wallet-prod.web.app',
+  ]);
+
+  const origin = req.get('origin');
+
+  if (origin && allowedOrigins.has(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  } else {
+    res.set('Access-Control-Allow-Origin', '*');
+  }
+
+  res.set('Vary', 'Origin');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
+}
+
 export const createPurchase = onRequest({ region: REGION, cors: true }, async (req, res) => {
+  setCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
+
   try {
     if (req.method !== 'POST') {
       return sendJson(res, 405, {

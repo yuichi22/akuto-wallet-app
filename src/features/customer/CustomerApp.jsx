@@ -725,6 +725,40 @@ export default function CustomerApp() {
       setLoginResolving(true);
       setLoginResolveError('');
 
+      // /u/{customerId} から開いた場合は、collection query を使わず
+      // URL上の利用者ドキュメントを直接読む。
+      // Firestore rules は resource.data.phone と request.auth.token.phone_number の一致で許可する。
+      if (routeCustomerId) {
+        const routeCustomerRef = doc(db, `${basePath}/customers/${routeCustomerId}`);
+        const routeCustomerSnap = await getDoc(routeCustomerRef);
+
+        if (!routeCustomerSnap.exists()) {
+          setLoginResolveError('利用者データが見つかりません。スタッフに確認してください。');
+          return;
+        }
+
+        const routeCustomer = routeCustomerSnap.data();
+
+        if (routeCustomer.phone !== phoneNumber) {
+          setLoginResolveError(`ログインした電話番号 ${phoneNumber} と利用者情報の電話番号が一致しません。スタッフに確認してください。`);
+          return;
+        }
+
+        await setDoc(
+          routeCustomerRef,
+          {
+            authUid: user.uid,
+            phone: phoneNumber,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        setResolvedCustomerId(routeCustomerId);
+        return;
+      }
+
+      // /login から入った場合のみ検索で利用者を探す。
       const customersRef = collection(db, `${basePath}/customers`);
 
       const authUidQuery = query(
@@ -733,7 +767,6 @@ export default function CustomerApp() {
       );
 
       const authUidSnapshot = await getDocs(authUidQuery);
-
       let matchedDoc = authUidSnapshot.docs[0] || null;
 
       if (!matchedDoc) {

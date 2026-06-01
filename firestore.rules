@@ -23,10 +23,19 @@ service cloud.firestore {
       return isDemoStaffByUid() || isDemoStaffByPhone();
     }
 
-    function isSelfCustomer(customerId) {
+    function isSelfCustomer() {
       return signedIn()
-        && exists(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/customers/$(customerId))
-        && get(/databases/$(database)/documents/organizations/org_demo/offices/office_demo/customers/$(customerId)).data.authUid == request.auth.uid;
+        && resource.data.authUid == request.auth.uid;
+    }
+
+    function isPhoneMatchedCustomer() {
+      return signedIn()
+        && request.auth.token.phone_number != null
+        && resource.data.phone == request.auth.token.phone_number;
+    }
+
+    function isSelfOrPhoneMatchedCustomer() {
+      return isSelfCustomer() || isPhoneMatchedCustomer();
     }
 
     function isSelfTransaction(transactionId) {
@@ -44,7 +53,13 @@ service cloud.firestore {
         allow write: if isDemoStaff();
 
         match /staffMembers/{staffId} {
-          allow read: if isDemoStaff();
+          allow read: if isDemoStaff()
+            || (
+              signedIn()
+              && request.auth.token.phone_number != null
+              && staffId == request.auth.token.phone_number
+              && resource.data.status == 'active'
+            );
           allow write: if isDemoStaff();
         }
 
@@ -59,16 +74,17 @@ service cloud.firestore {
         }
 
         match /customers/{customerId} {
-          allow read: if isDemoStaff() || isSelfCustomer(customerId);
+          allow read: if isDemoStaff() || isSelfOrPhoneMatchedCustomer();
 
-          // 利用者本人は authUid/phone 紐付けなど最低限の更新のみ許可。
+          // 利用者本人は初回ログイン時の authUid/phone 紐付けなど最低限の更新のみ許可。
           // 残高・請求額・状態・名前などの重要項目は staff / Function 側で更新する。
           allow update: if isDemoStaff()
             || (
-              isSelfCustomer(customerId)
+              isSelfOrPhoneMatchedCustomer()
               && request.resource.data.diff(resource.data).changedKeys()
                 .hasOnly(['authUid', 'phone', 'updatedAt'])
               && request.resource.data.authUid == request.auth.uid
+              && request.resource.data.phone == request.auth.token.phone_number
             );
 
           allow create, delete: if isDemoStaff();
