@@ -129,7 +129,7 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6">
+    <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
       <div className="mx-auto max-w-md">
         <header className="mb-6">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">

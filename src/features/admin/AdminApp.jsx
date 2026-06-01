@@ -2080,7 +2080,7 @@ export default function AdminApp() {
 
   if (authChecking) {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-6 text-white">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
         <div className="mx-auto max-w-md rounded-[2rem] bg-white/10 p-8 text-center ring-1 ring-white/10">
           <Loader2 className="mx-auto animate-spin text-slate-400" size={28} />
           <p className="mt-3 text-sm font-bold text-slate-400">
@@ -2103,7 +2103,7 @@ export default function AdminApp() {
 
   if (staffChecking) {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-6 text-white">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
         <div className="mx-auto max-w-md rounded-[2rem] bg-white/10 p-8 text-center ring-1 ring-white/10">
           <Loader2 className="mx-auto animate-spin text-slate-400" size={28} />
           <p className="mt-3 text-sm font-bold text-slate-400">
@@ -2116,7 +2116,7 @@ export default function AdminApp() {
 
   if (staffError || !staffMember) {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-6 text-white">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
         <div className="mx-auto max-w-md rounded-[2rem] bg-white p-6 text-slate-900 shadow-sm">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-1 text-red-500" size={22} />
@@ -2142,7 +2142,7 @@ export default function AdminApp() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-white">
+    <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8">
           <div className="flex items-start justify-between gap-4">
@@ -2151,7 +2151,8 @@ export default function AdminApp() {
                 Akuto Wallet Admin
               </p>
               <h1 className="mt-2 text-3xl font-black tracking-tight">
-                まいウォレット 管理画面
+                <span className="block">まいウォレット</span>
+                <span className="block">管理画面</span>
               </h1>
               <p className="mt-2 text-sm font-medium text-slate-400">
                 法人・事業所・利用者・商品・取引履歴を管理します。
@@ -2195,18 +2196,6 @@ export default function AdminApp() {
           </section>
         ) : (
           <>
-            <section className="mb-4 rounded-[2rem] bg-emerald-500/15 p-5 ring-1 ring-emerald-400/20">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200">
-                Staff Access
-              </p>
-              <p className="mt-2 text-xl font-black text-white">
-                {staffMember?.displayName || 'スタッフ'} / {staffMember?.role || 'staff'}
-              </p>
-              <p className="mt-1 text-xs font-bold text-emerald-100/80">
-                UID: {adminUser?.uid}
-              </p>
-            </section>
-
             <section className="rounded-[2rem] bg-white/10 p-5 ring-1 ring-white/10">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-3">

@@ -121,7 +121,7 @@ function HistoryModal({ isOpen, transactions, onClose }) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/40 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0"
+        className="fixed inset-0 z-40 flex items-end justify-center bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950/40 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -234,7 +234,7 @@ function PurchaseConfirmModal({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/40 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0"
+        className="fixed inset-0 z-40 flex items-end justify-center bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950/40 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -267,17 +267,17 @@ function PurchaseConfirmModal({
 
           <div className="mt-5 rounded-[1.5rem] bg-slate-50 p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-500">金額</span>
-              <span className="text-2xl font-black text-slate-900">
+              <span className="text-sm font-black text-slate-700">金額</span>
+              <span className="text-2xl font-black text-slate-950">
                 {formatYen(product.price)}
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3">
-              <span className="text-sm font-bold text-slate-500">
+              <span className="text-sm font-black text-slate-700">
                 {isPostpaid ? '購入後の請求額' : '購入後の残高'}
               </span>
-              <span className="text-lg font-black text-slate-900">
+              <span className="text-lg font-black text-slate-950">
                 {isPostpaid
                   ? formatYen(Number(customer?.currentInvoiceAmount || 0) + Number(product.price || 0))
                   : formatYen(balanceAfter)}
@@ -348,7 +348,7 @@ function PurchaseLiveScreen({ purchase, onClose }) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 overflow-hidden bg-slate-950 text-white"
+        className="fixed inset-0 z-50 overflow-hidden bg-white text-slate-950"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -369,14 +369,14 @@ function PurchaseLiveScreen({ purchase, onClose }) {
 
         <div className="relative flex min-h-screen flex-col px-5 py-6">
           <div className="flex items-center justify-between">
-            <div className="rounded-full bg-white/15 px-4 py-2 text-xs font-black tracking-[0.25em] text-white">
+            <div className="rounded-full bg-emerald-50 px-4 py-2 text-xs font-black tracking-[0.25em] text-emerald-700 ring-1 ring-emerald-100">
               LIVE
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-1 ring-slate-200"
             >
               <X size={22} />
             </button>
@@ -388,10 +388,10 @@ function PurchaseLiveScreen({ purchase, onClose }) {
               animate={{ rotate: 360 }}
               transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
               style={{
-                background: `conic-gradient(rgba(255,255,255,1) ${progress * 360}deg, rgba(255,255,255,0.15) 0deg)`,
+                background: `conic-gradient(rgb(5,150,105) ${progress * 360}deg, rgba(5,150,105,0.12) 0deg)`,
               }}
             >
-              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-slate-950/80 backdrop-blur">
+              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-100">
                 <CheckCircle2 size={58} />
               </div>
             </motion.div>
@@ -401,20 +401,20 @@ function PurchaseLiveScreen({ purchase, onClose }) {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 240, damping: 18 }}
             >
-              <p className="text-lg font-black text-emerald-200">
+              <p className="text-lg font-black text-emerald-600">
                 購入しました
               </p>
               <h2 className="mt-3 text-5xl font-black tracking-tight">
                 {purchase.productName}
               </h2>
-              <p className="mt-4 text-4xl font-black">
+              <p className="mt-4 text-6xl font-black tracking-tight">
                 {formatYen(purchase.amount)}
               </p>
             </motion.div>
 
             <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-3">
-              <div className="rounded-[1.5rem] bg-white/15 p-4 backdrop-blur">
-                <p className="text-xs font-black text-white/60">
+              <div className="rounded-[1.5rem] bg-emerald-600 p-4 text-white shadow-lg shadow-emerald-100">
+                <p className="text-xs font-black text-emerald-100">
                   現在時刻
                 </p>
                 <p className="mt-1 text-2xl font-black">
@@ -422,8 +422,8 @@ function PurchaseLiveScreen({ purchase, onClose }) {
                 </p>
               </div>
 
-              <div className="rounded-[1.5rem] bg-white/15 p-4 backdrop-blur">
-                <p className="text-xs font-black text-white/60">
+              <div className="rounded-[1.5rem] bg-emerald-600 p-4 text-white shadow-lg shadow-emerald-100">
+                <p className="text-xs font-black text-emerald-100">
                   確認コード
                 </p>
                 <p className="mt-1 text-3xl font-black tracking-[0.18em]">
@@ -432,7 +432,7 @@ function PurchaseLiveScreen({ purchase, onClose }) {
               </div>
             </div>
 
-            <div className="mt-4 w-full max-w-sm rounded-[1.5rem] bg-white p-4 text-slate-950">
+            <div className="mt-4 w-full max-w-sm rounded-[1.5rem] bg-emerald-50 p-4 text-slate-950 ring-1 ring-emerald-100">
               <div className="flex items-center justify-center gap-2">
                 <Sparkles size={18} />
                 <p className="text-sm font-black">
@@ -841,7 +841,7 @@ export default function CustomerApp() {
 
   if (shouldShowLogin && authChecking) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-6">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
         <div className="mx-auto max-w-md rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-slate-100">
           <Loader2 className="mx-auto animate-spin text-slate-400" size={28} />
           <p className="mt-3 text-sm font-bold text-slate-500">
@@ -867,7 +867,7 @@ export default function CustomerApp() {
 
   if (shouldShowLogin && loggedInUser && loginResolving) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-6">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
         <div className="mx-auto max-w-md rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-slate-100">
           <Loader2 className="mx-auto animate-spin text-slate-400" size={28} />
           <p className="mt-3 text-sm font-bold text-slate-500">
@@ -880,7 +880,7 @@ export default function CustomerApp() {
 
   if (shouldShowLogin && loggedInUser && loginResolveError) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-6">
+      <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
         <div className="mx-auto max-w-md rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-red-100">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-1 text-red-500" size={22} />
@@ -888,7 +888,7 @@ export default function CustomerApp() {
               <p className="text-base font-black text-red-600">
                 利用者確認エラー
               </p>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+              <p className="mt-2 text-sm font-bold leading-6 text-emerald-100/85">
                 {loginResolveError}
               </p>
 
@@ -916,7 +916,7 @@ export default function CustomerApp() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6">
+    <main className="min-h-screen bg-gradient-to-b from-emerald-900 via-teal-900 to-slate-950 px-4 py-6 text-white">
       <div className="mx-auto max-w-md">
         <header className="mb-6">
           <div className="flex items-start justify-between gap-3">
@@ -924,10 +924,10 @@ export default function CustomerApp() {
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
                 {APP_CONFIG.brandName}
               </p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-white">
                 {APP_CONFIG.appName}
               </h1>
-              <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+              <p className="mt-2 text-sm font-bold leading-6 text-emerald-100/85">
                 事業所で使える、わたしのお財布。
               </p>
             </div>
@@ -960,7 +960,7 @@ export default function CustomerApp() {
                 <p className="text-base font-black text-red-600">
                   読み込みエラー
                 </p>
-                <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+                <p className="mt-2 text-sm font-bold leading-6 text-emerald-100/85">
                   {errorMessage}
                 </p>
               </div>
@@ -1014,7 +1014,7 @@ export default function CustomerApp() {
 
             <section className="mt-6">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-black text-slate-900">
+                <h2 className="text-base font-black text-white">
                   商品を選ぶ
                 </h2>
                 <button
@@ -1049,7 +1049,7 @@ export default function CustomerApp() {
                           <p className="text-base font-black text-slate-900">
                             {product.name}
                           </p>
-                          <p className="text-sm font-bold text-slate-400">
+                          <p className="text-sm font-black text-slate-900">
                             {formatYen(product.price)}
                           </p>
                         </div>
