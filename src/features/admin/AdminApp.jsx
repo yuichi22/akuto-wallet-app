@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
+import { AnimatePresence, motion } from 'framer-motion';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import {
   collection,
@@ -29,6 +31,7 @@ import {
   Save,
   Link,
   Copy,
+  QrCode,
   LogOut,
 } from 'lucide-react';
 
@@ -1030,6 +1033,9 @@ export default function AdminApp() {
   const [settingsProcessing, setSettingsProcessing] = useState(false);
   const [settingsError, setSettingsError] = useState('');
   const [copiedCustomerId, setCopiedCustomerId] = useState('');
+  const [qrCustomer, setQrCustomer] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const [qrError, setQrError] = useState('');
   const [transactionTypeFilter, setTransactionTypeFilter] = useState('all');
   const [transactionPeriodFilter, setTransactionPeriodFilter] = useState('all');
   const [customerStatusFilter, setCustomerStatusFilter] = useState('active');
@@ -1543,6 +1549,33 @@ export default function AdminApp() {
       console.error(error);
       window.prompt('利用者URLをコピーしてください', url);
     }
+  };
+
+  const openCustomerQrModal = async (customer) => {
+    if (!customer?.id) return;
+
+    setQrCustomer(customer);
+    setQrDataUrl('');
+    setQrError('');
+
+    try {
+      const url = getCustomerUrl(customer.id);
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: 320,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+      });
+      setQrDataUrl(dataUrl);
+    } catch (error) {
+      console.error(error);
+      setQrError('QRコードの生成に失敗しました。');
+    }
+  };
+
+  const closeCustomerQrModal = () => {
+    setQrCustomer(null);
+    setQrDataUrl('');
+    setQrError('');
   };
 
   const handleExportCustomersCsv = () => {
@@ -2399,19 +2432,31 @@ export default function AdminApp() {
                       </div>
 
                       <div className="mt-4 rounded-2xl bg-white px-3 py-2 ring-1 ring-slate-100">
-                        <div className="flex items-center gap-2 text-slate-400">
-                          <Link size={14} />
-                          <p className="truncate text-xs font-bold">
+                        <div className="flex min-w-0 items-center gap-2 text-slate-400">
+                          <Link size={14} className="shrink-0" />
+                          <p className="hidden min-w-0 truncate text-xs font-bold sm:block">
                             {getCustomerUrl(customer.id)}
+                          </p>
+                          <p className="min-w-0 truncate text-xs font-bold sm:hidden">
+                            利用者URL
                           </p>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex flex-wrap justify-end gap-2">
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => openCustomerQrModal(customer)}
+                          className="flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 sm:hidden"
+                        >
+                          <QrCode size={14} />
+                          QR表示
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => copyCustomerUrl(customer)}
-                          className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200"
+                          className="flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200"
                         >
                           <Copy size={14} />
                           {copiedCustomerId === customer.id ? 'コピー済み' : 'URLコピー'}
@@ -2867,6 +2912,83 @@ export default function AdminApp() {
           </>
         )}
       </div>
+
+      <AnimatePresence>
+        {qrCustomer ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.section
+              className="w-full max-w-sm rounded-[2rem] bg-white p-5 text-slate-900 shadow-2xl"
+              initial={{ y: 40, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 40, opacity: 0, scale: 0.98 }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                    Customer QR
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-900">
+                    利用者QRコード
+                  </h2>
+                  <p className="mt-2 text-sm font-bold text-slate-500">
+                    {qrCustomer.name} さんの利用者画面を開きます。
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeCustomerQrModal}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-[1.5rem] bg-slate-50 p-4 text-center">
+                {qrError ? (
+                  <p className="text-sm font-bold text-red-600">
+                    {qrError}
+                  </p>
+                ) : qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt={`${qrCustomer.name}さんの利用者URL QRコード`}
+                    className="mx-auto h-64 w-64 rounded-2xl bg-white p-3"
+                  />
+                ) : (
+                  <div className="flex h-64 items-center justify-center">
+                    <Loader2 className="animate-spin text-slate-400" size={28} />
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => copyCustomerUrl(qrCustomer)}
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 text-sm font-black text-slate-700"
+                >
+                  <Copy size={15} />
+                  URLコピー
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeCustomerQrModal}
+                  className="flex h-12 items-center justify-center rounded-2xl bg-slate-900 text-sm font-black text-white"
+                >
+                  閉じる
+                </button>
+              </div>
+            </motion.section>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <ChargeModal
         customer={chargeCustomer}

@@ -36,8 +36,8 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
   const recaptchaRef = useRef(null);
   const verifierRef = useRef(null);
 
-  const [phone, setPhone] = useState('09012345678');
-  const [code, setCode] = useState('123456');
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -166,7 +166,7 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               className="h-14 w-full rounded-2xl border-2 border-slate-100 px-4 text-base font-black outline-none focus:border-slate-900"
-              placeholder="09012345678"
+              placeholder="電話番号を入力"
               disabled={sending || verifying}
             />
             <p className="mt-2 text-xs font-bold leading-5 text-slate-400">
@@ -198,7 +198,7 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
               value={code}
               onChange={(event) => setCode(event.target.value)}
               className="h-14 w-full rounded-2xl border-2 border-slate-100 px-4 text-center text-2xl font-black tracking-[0.35em] outline-none focus:border-slate-900"
-              placeholder="123456"
+              placeholder="確認コード"
               disabled={sending || verifying}
             />
           </div>
