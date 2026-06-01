@@ -1033,6 +1033,7 @@ export default function AdminApp() {
   const [transactionTypeFilter, setTransactionTypeFilter] = useState('all');
   const [transactionPeriodFilter, setTransactionPeriodFilter] = useState('all');
   const [customerStatusFilter, setCustomerStatusFilter] = useState('active');
+  const [productVisibilityFilter, setProductVisibilityFilter] = useState('active');
 
   const basePath = useMemo(
     () => `organizations/${DEMO_ORGANIZATION_ID}/offices/${DEMO_OFFICE_ID}`,
@@ -1277,6 +1278,11 @@ export default function AdminApp() {
   });
 
   const activeProducts = products.filter((product) => product.isActive !== false);
+  const filteredProducts = products.filter((product) => {
+    if (productVisibilityFilter === 'all') return true;
+    if (productVisibilityFilter === 'inactive') return product.isActive === false;
+    return product.isActive !== false;
+  });
   const filteredTransactions = transactions.filter((transaction) => {
     const typeMatches = transactionTypeFilter === 'all'
       || transaction.type === transactionTypeFilter;
@@ -2209,8 +2215,8 @@ export default function AdminApp() {
               />
               <StatCard
                 title="Products"
-                value={`${activeProducts.length}件`}
-                description="表示中の商品数"
+                value={`${filteredProducts.length}件`}
+                description={`表示中 / 全${products.length}件`}
                 icon={Package}
               />
               <StatCard
@@ -2465,8 +2471,33 @@ export default function AdminApp() {
                   商品追加
                 </button>
 
+                <div className="mb-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-2">
+                  {[
+                    { value: 'active', label: '表示中' },
+                    { value: 'inactive', label: '非表示' },
+                    { value: 'all', label: 'すべて' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setProductVisibilityFilter(option.value)}
+                      className={`h-10 rounded-xl text-xs font-black ${
+                        productVisibilityFilter === option.value
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-500 ring-1 ring-slate-100'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mb-3 text-xs font-black text-slate-400">
+                  表示中 {filteredProducts.length}件 / 全{products.length}件
+                </div>
+
                 <div className="grid gap-3">
-                  {products.map((product) => {
+                  {filteredProducts.map((product) => {
                     const Icon = iconMap[product.icon] || Ticket;
 
                     return (
