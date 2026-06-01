@@ -55,6 +55,30 @@ const iconMap = {
 
 const formatYen = (value) => `${Number(value || 0).toLocaleString()}円`;
 
+const normalizePhoneNumber = (value) => {
+  const raw = String(value || '').trim();
+
+  if (!raw) return '';
+
+  const compact = raw.replace(/[\s\-ー−()（）]/g, '');
+
+  if (compact.startsWith('+')) {
+    return `+${compact.slice(1).replace(/\D/g, '')}`;
+  }
+
+  const digits = compact.replace(/\D/g, '');
+
+  if (digits.startsWith('81')) {
+    return `+${digits}`;
+  }
+
+  if (digits.startsWith('0')) {
+    return `+81${digits.slice(1)}`;
+  }
+
+  return digits ? `+${digits}` : '';
+};
+
 const makeCheckCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -714,7 +738,7 @@ export default function CustomerApp() {
   };
 
   const resolveCustomerForLoggedInUser = async (user) => {
-    const phoneNumber = user?.phoneNumber;
+    const phoneNumber = normalizePhoneNumber(user?.phoneNumber);
 
     if (!phoneNumber) {
       setLoginResolveError('ログインした電話番号を取得できませんでした。');
@@ -738,9 +762,10 @@ export default function CustomerApp() {
         }
 
         const routeCustomer = routeCustomerSnap.data();
+        const routeCustomerPhone = normalizePhoneNumber(routeCustomer.phone);
 
-        if (routeCustomer.phone !== phoneNumber) {
-          setLoginResolveError(`ログインした電話番号 ${phoneNumber} と利用者情報の電話番号が一致しません。スタッフに確認してください。`);
+        if (routeCustomerPhone !== phoneNumber) {
+          setLoginResolveError('ログインした電話番号と利用者情報の電話番号が一致しません。ログアウトして別の電話番号でログインしてください。');
           return;
         }
 

@@ -81,11 +81,26 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
       setConfirmationResult(result);
     } catch (error) {
       console.error(error);
-      setErrorMessage(error.message || '確認コードの送信に失敗しました。');
 
       if (verifierRef.current) {
-        verifierRef.current.clear();
+        try {
+          verifierRef.current.clear();
+        } catch (clearError) {
+          console.warn('reCAPTCHA clear failed', clearError);
+        }
         verifierRef.current = null;
+      }
+
+      const message = String(error?.message || '');
+
+      if (
+        message.includes('reCAPTCHA')
+        || message.includes('recaptcha')
+        || error?.code === 'auth/captcha-check-failed'
+      ) {
+        setErrorMessage('reCAPTCHA に接続できませんでした。ページを再読み込みするか、別のブラウザ・ネットワークでお試しください。');
+      } else {
+        setErrorMessage(error.message || '確認コードの送信に失敗しました。');
       }
     } finally {
       setSending(false);
