@@ -414,6 +414,40 @@ const createCustomerId = () => {
   return `customer_${Date.now()}_${random}`;
 };
 
+const normalizePhoneNumber = (value) => {
+  const raw = String(value || '').trim();
+
+  if (raw.length === 0) return '';
+
+  const compact = raw.replace(/[\s\-ー−()（）]/g, '');
+
+  if (compact.startsWith('+')) {
+    return `+${compact.slice(1).replace(/\D/g, '')}`;
+  }
+
+  const digits = compact.replace(/\D/g, '');
+
+  if (digits.startsWith('81')) {
+    return `+${digits}`;
+  }
+
+  if (digits.startsWith('0')) {
+    return `+81${digits.slice(1)}`;
+  }
+
+  return digits ? `+${digits}` : '';
+};
+
+const formatDomesticPhoneNumber = (value) => {
+  const normalized = normalizePhoneNumber(value);
+
+  if (normalized.startsWith('+81')) {
+    return `0${normalized.slice(3)}`;
+  }
+
+  return String(value || '');
+};
+
 const emptyCustomerForm = {
   name: '',
   kana: '',
@@ -506,7 +540,7 @@ function CustomerModal({
               value={form.phone}
               onChange={(event) => onChange({ ...form, phone: event.target.value })}
               className="h-12 w-full rounded-2xl border-2 border-slate-100 px-4 text-sm font-bold outline-none focus:border-slate-900"
-              placeholder="例：+819012345678"
+              placeholder="例：09012345678"
               disabled={processing}
             />
           </div>
@@ -846,11 +880,11 @@ function StaffModal({
               value={form.phoneNumber}
               onChange={(event) => onChange({ ...form, phoneNumber: event.target.value })}
               className="h-12 w-full rounded-2xl border-2 border-slate-100 px-4 text-sm font-bold outline-none focus:border-slate-900"
-              placeholder="例：+819012345678"
+              placeholder="例：09012345678"
               disabled={processing}
             />
             <p className="mt-2 text-xs font-bold leading-5 text-slate-400">
-              090-1234-5678 → +819012345678 の形式で登録してください。
+              090-1234-5678 と入力しても保存できます。
             </p>
           </div>
 
@@ -1506,7 +1540,7 @@ export default function AdminApp() {
         利用者ID: customer.id || '',
         氏名: customer.name || '',
         ふりがな: customer.kana || '',
-        電話番号: customer.phone || '',
+        電話番号: customer.phone ? formatDomesticPhoneNumber(customer.phone) : '',
         残高: Number(customer.balance || 0),
         請求額: Number(customer.currentInvoiceAmount || 0),
         支払い方式: getPaymentModeLabel(paymentMode),
@@ -1783,7 +1817,7 @@ export default function AdminApp() {
     setCustomerForm({
       name: customer.name || '',
       kana: customer.kana || '',
-      phone: customer.phone || '',
+      phone: formatDomesticPhoneNumber(customer.phone),
       balance: String(customer.balance ?? 0),
       currentInvoiceAmount: String(customer.currentInvoiceAmount ?? 0),
       paymentModeOverride: customer.paymentModeOverride || '',
@@ -1805,7 +1839,7 @@ export default function AdminApp() {
 
     const name = String(customerForm.name || '').trim();
     const kana = String(customerForm.kana || '').trim();
-    const phone = String(customerForm.phone || '').trim();
+    const phone = normalizePhoneNumber(customerForm.phone);
     const balance = Math.round(Number(customerForm.balance || 0));
     const currentInvoiceAmount = Math.round(Number(customerForm.currentInvoiceAmount || 0));
     const paymentModeOverride = ['prepaid', 'postpaid'].includes(customerForm.paymentModeOverride)
@@ -1870,7 +1904,7 @@ export default function AdminApp() {
     setEditingManagedStaff(member);
     setManagedStaffForm({
       displayName: member.displayName || '',
-      phoneNumber: member.phoneNumber || member.id || '',
+      phoneNumber: formatDomesticPhoneNumber(member.phoneNumber || member.id),
       role: member.role || 'staff',
       status: member.status || 'active',
     });
@@ -1888,7 +1922,7 @@ export default function AdminApp() {
     if (!managedStaffForm || managedStaffProcessing) return;
 
     const displayName = String(managedStaffForm.displayName || '').trim();
-    const phoneNumber = String(managedStaffForm.phoneNumber || '').trim();
+    const phoneNumber = normalizePhoneNumber(managedStaffForm.phoneNumber);
     const role = managedStaffForm.role === 'owner' ? 'owner' : 'staff';
     const status = managedStaffForm.status === 'inactive' ? 'inactive' : 'active';
 
@@ -2222,7 +2256,7 @@ export default function AdminApp() {
                             {customer.name}
                           </p>
                           <p className="mt-1 text-xs font-bold text-slate-400">
-                            {customer.phone || '電話番号未設定'} / {getCustomerOverrideLabel(customer)}
+                            {customer.phone ? formatDomesticPhoneNumber(customer.phone) : '電話番号未設定'} / {getCustomerOverrideLabel(customer)}
                           </p>
                         </div>
 
@@ -2295,7 +2329,7 @@ export default function AdminApp() {
                             {customer.name}
                           </p>
                           <p className="mt-1 text-xs font-bold text-slate-400">
-                            {customer.phone || '電話番号未設定'}
+                            {customer.phone ? formatDomesticPhoneNumber(customer.phone) : '電話番号未設定'}
                           </p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             <p className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
@@ -2477,7 +2511,7 @@ export default function AdminApp() {
                             {member.displayName || 'スタッフ'}
                           </p>
                           <p className="mt-1 text-xs font-bold text-slate-400">
-                            {member.phoneNumber || member.id || '電話番号未設定'}
+                            {member.phoneNumber || member.id ? formatDomesticPhoneNumber(member.phoneNumber || member.id) : '電話番号未設定'}
                           </p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             <p className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${

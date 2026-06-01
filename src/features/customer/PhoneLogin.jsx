@@ -7,11 +7,36 @@ import { Loader2, Phone, ShieldCheck } from 'lucide-react';
 
 import { auth } from '../../shared/api/firebase/client';
 
+const normalizePhoneNumber = (value) => {
+  const raw = String(value || '').trim();
+
+  if (!raw) return '';
+
+  const compact = raw.replace(/[\s\-ー−()（）]/g, '');
+
+  if (compact.startsWith('+')) {
+    return `+${compact.slice(1).replace(/\D/g, '')}`;
+  }
+
+  const digits = compact.replace(/\D/g, '');
+
+  if (digits.startsWith('81')) {
+    return `+${digits}`;
+  }
+
+  if (digits.startsWith('0')) {
+    return `+81${digits.slice(1)}`;
+  }
+
+  return digits ? `+${digits}` : '';
+};
+
+
 export default function PhoneLogin({ resolving = false, resolveError = '', onLoggedIn }) {
   const recaptchaRef = useRef(null);
   const verifierRef = useRef(null);
 
-  const [phone, setPhone] = useState('+819012345678');
+  const [phone, setPhone] = useState('09012345678');
   const [code, setCode] = useState('123456');
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [sending, setSending] = useState(false);
@@ -45,7 +70,13 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
       setErrorMessage('');
 
       const verifier = setupRecaptcha();
-      const result = await signInWithPhoneNumber(auth, phone, verifier);
+      const normalizedPhone = normalizePhoneNumber(phone);
+
+      if (!normalizedPhone) {
+        throw new Error('電話番号を入力してください。例：09012345678');
+      }
+
+      const result = await signInWithPhoneNumber(auth, normalizedPhone, verifier);
 
       setConfirmationResult(result);
     } catch (error) {
@@ -120,11 +151,11 @@ export default function PhoneLogin({ resolving = false, resolveError = '', onLog
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               className="h-14 w-full rounded-2xl border-2 border-slate-100 px-4 text-base font-black outline-none focus:border-slate-900"
-              placeholder="+819012345678"
+              placeholder="09012345678"
               disabled={sending || verifying}
             />
             <p className="mt-2 text-xs font-bold leading-5 text-slate-400">
-              日本番号は +81 形式で入力します。例：090-1234-5678 → +819012345678
+              090-1234-5678 または 09012345678 の形式で入力できます。
             </p>
           </div>
 
