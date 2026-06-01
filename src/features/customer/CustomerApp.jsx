@@ -859,13 +859,30 @@ export default function CustomerApp() {
         <div className="mx-auto max-w-md rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-red-100">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-1 text-red-500" size={22} />
-            <div>
+            <div className="flex-1">
               <p className="text-base font-black text-red-600">
                 利用者確認エラー
               </p>
               <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
                 {loginResolveError}
               </p>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await signOut(auth);
+                  setLoggedInUser(null);
+                  setLoginResolveError('');
+                  setLoginResolving(false);
+                  setCustomer(null);
+                  setTransactions([]);
+                  setResolvedCustomerId(routeCustomerId);
+                  window.location.reload();
+                }}
+                className="mt-5 flex h-12 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-black text-white"
+              >
+                ログアウトして別の電話番号でログイン
+              </button>
             </div>
           </div>
         </div>
